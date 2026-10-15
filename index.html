@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>카카오맵 장소 검색 서비스</title>
+  <title>KBO 야구장 주변 맛집 & 카페 지도</title>
   
-  <!-- CSS 스타일 정의 -->
   <style>
-    /* 전체 페이지 및 기본 리셋 설정 */
+    /* 전체 페이지 리셋 및 기본 설정 */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -20,14 +19,14 @@
       overflow: hidden;
     }
 
-    /* 메인 컨테이너: 화면을 좌우 2분할 (Flexbox 이용) */
+    /* 화면 2분할 메인 레이아웃 */
     .app-container {
       display: flex;
       width: 100vw;
       height: 100vh;
     }
 
-    /* 왼쪽 패널: 검색창과 결과 리스트 */
+    /* 왼쪽 사이드바 (구장 선택 + 탭 + 결과 리스트) */
     .sidebar {
       width: 380px;
       min-width: 320px;
@@ -41,99 +40,117 @@
 
     /* 사이드바 헤더 영역 */
     .sidebar-header {
-      padding: 20px;
+      padding: 16px 20px;
       background-color: #f8f9fa;
       border-bottom: 1px solid #e9ecef;
     }
 
     .sidebar-header h1 {
-      font-size: 1.25rem;
-      color: #333333;
+      font-size: 1.2rem;
+      color: #1f2937;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* KBO 야구장 드롭다운 선택 상자 */
+    .stadium-select-group {
       margin-bottom: 12px;
     }
 
-    /* 검색 폼 스타일 */
-    .search-form {
+    .stadium-select-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .stadium-select {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: 2px solid #002c5f; /* 야구 느낌의 딥블루 */
+      border-radius: 8px;
+      outline: none;
+      background-color: #ffffff;
+      color: #002c5f;
+      cursor: pointer;
+    }
+
+    /* 탭 버튼 영역 */
+    .tab-group {
       display: flex;
       gap: 8px;
+      margin-top: 4px;
     }
 
-    .search-input {
+    .tab-btn {
       flex: 1;
-      padding: 10px 14px;
-      font-size: 0.95rem;
-      border: 1px solid #ced4da;
-      border-radius: 6px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .search-input:focus {
-      border-color: #fee500; /* 카카오 대표 노란색 포인트 */
-    }
-
-    .search-button {
-      padding: 10px 16px;
-      background-color: #fee500;
-      color: #191919;
+      padding: 10px;
+      font-size: 0.9rem;
       font-weight: bold;
-      border: none;
+      border: 1px solid #d1d5db;
+      background-color: #f3f4f6;
+      color: #4b5563;
       border-radius: 6px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: all 0.2s ease;
     }
 
-    .search-button:hover {
-      background-color: #fada00;
+    .tab-btn.active {
+      background-color: #002c5f;
+      color: #ffffff;
+      border-color: #002c5f;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
 
-    /* 장소 검색 결과 목록 영역 */
+    /* 장소 결과 목록 */
     .results-list {
       flex: 1;
       overflow-y: auto;
       list-style: none;
     }
 
-    /* 결과 항목 개별 카드 스타일 */
     .result-item {
       padding: 16px 20px;
-      border-bottom: 1px solid #f1f3f5;
+      border-bottom: 1px solid #f3f4f6;
       cursor: pointer;
       transition: background-color 0.2s;
     }
 
     .result-item:hover {
-      background-color: #f8f9fa;
+      background-color: #f9fafb;
     }
 
     .result-item .place-title {
       font-size: 1.05rem;
       font-weight: bold;
-      color: #212529;
+      color: #111827;
       margin-bottom: 4px;
     }
 
     .result-item .place-address {
       font-size: 0.85rem;
-      color: #66d28e;
-      color: #495057;
+      color: #4b5563;
       margin-bottom: 4px;
     }
 
     .result-item .place-phone {
       font-size: 0.8rem;
-      color: #2b8a3e;
+      color: #059669;
     }
 
-    /* 안내 메시지용 클래스 */
     .status-message {
-      padding: 30px 20px;
+      padding: 40px 20px;
       text-align: center;
-      color: #868e96;
+      color: #9ca3af;
       font-size: 0.95rem;
     }
 
-    /* 오른쪽 영역: 지도 표시 부분 */
+    /* 오른쪽 지도 영역 */
     .map-container {
       flex: 1;
       height: 100%;
@@ -145,247 +162,322 @@
       height: 100%;
     }
 
-    /* 현재 위치로 이동하는 버튼 */
+    /* 현재 내 위치로 이동 버튼 */
     .my-location-btn {
       position: absolute;
       top: 20px;
       right: 20px;
       z-index: 5;
       background-color: #ffffff;
-      border: 1px solid #ced4da;
+      border: 1px solid #d1d5db;
       padding: 10px 14px;
       border-radius: 8px;
       font-weight: bold;
-      color: #333;
+      color: #1f2937;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       transition: all 0.2s;
     }
 
     .my-location-btn:hover {
-      background-color: #f8f9fa;
+      background-color: #f9fafb;
+    }
+
+    /* 지도 커스텀 인포윈도우 스타일 */
+    .custom-infowindow {
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 220px;
+    }
+    .custom-infowindow strong {
+      display: block;
+      font-size: 13px;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+    .custom-infowindow span {
+      color: #6b7280;
     }
   </style>
 
-  <!-- 
-    카카오 지도 JavaScript SDK 불러오기
-    - appkey 파라미터에 발급받은 키 입력 (24fe99dfd587292498c30233911527f8)
-    - libraries=services : 키워드 장소 검색 기능을 위해 라이브러리 추가 필요
-    - autoload=false : 스크립트 로드 후 kakao.maps.load()로 안전하게 실행하기 위해 필수
-  -->
+  <!-- 카카오 지도 SDK (Services 라이브러리 및 autoload=false 옵션 적용) -->
   <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=24fe99dfd587292498c30233911527f8&libraries=services&autoload=false"></script>
 </head>
 <body>
 
-  <!-- 애플리케이션 전체 레이아웃 (2분할) -->
   <div class="app-container">
     
-    <!-- 왼쪽 사이드바 (검색창 + 결과 목록) -->
+    <!-- 왼쪽 사이드바 -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>📍 장소 검색</h1>
-        <form id="searchForm" class="search-form">
-          <input type="text" id="searchInput" class="search-input" placeholder="검색어를 입력하세요 (예: 강남역 맛집)" required>
-          <button type="submit" class="search-button">검색</button>
-        </form>
+        <h1>⚾ 야구장 주변 지도</h1>
+        
+        <!-- KBO 홈구장 선택 셀렉트 박스 -->
+        <div class="stadium-select-group">
+          <label for="stadiumSelect">홈구장 선택</label>
+          <select id="stadiumSelect" class="stadium-select">
+            <option value="jamsil">잠실 야구장 (LG / 두산)</option>
+            <option value="gocheok">고척 스카이돔 (키움)</option>
+            <option value="ssg">SSG 랜더스필드 (SSG)</option>
+            <option value="suwon">수원 KT 위즈파크 (KT)</option>
+            <option value="hanwha">대전 한화생명 이글스파크 (한화)</option>
+            <option value="samsung">대구 삼성 라이온즈 파크 (삼성)</option>
+            <option value="kia">광주 기아 챔피언스 필드 (KIA)</option>
+            <option value="nc">창원 NC 파크 (NC)</option>
+            <option value="sajik">부산 사직 야구장 (롯데)</option>
+          </select>
+        </div>
+
+        <!-- 맛집 / 카페 탭 버튼 -->
+        <div class="tab-group">
+          <button id="restaurantTabBtn" class="tab-btn active" data-category="FD6" data-limit="10">🍔 맛집 (10곳)</button>
+          <button id="cafeTabBtn" class="tab-btn" data-category="CE7" data-limit="5">☕ 카페 (5곳)</button>
+        </div>
       </div>
 
-      <!-- 검색 결과를 나열할 리스트 -->
+      <!-- 결과 목록 -->
       <ul id="resultsList" class="results-list">
-        <li class="status-message">검색어를 입력하고 검색 버튼을 누르세요.</li>
+        <li class="status-message">야구장을 선택하면 주변 추천 장소가 표시됩니다.</li>
       </ul>
     </aside>
 
     <!-- 오른쪽 지도 영역 -->
     <main class="map-container">
       <div id="map"></div>
-      <button id="myLocationBtn" class="my-location-btn">🎯 현재 위치로</button>
+      <button id="myLocationBtn" class="my-location-btn">🎯 현재 내 위치</button>
     </main>
 
   </div>
 
-  <!-- JavaScript 소스코드 -->
   <script>
-    // 전역 변수 선언 (지도의 상태를 유지하는 중요한 변수들)
-    let mapObject = null;         // 카카오 Map 인스턴스
-    let placesService = null;     // 장소 검색 서비스 객체
-    let activeMarkers = [];       // 지도 위에 생성된 마커들을 관리하는 배열
-    let infoWindowObject = null;  // 마커를 클릭했을 때 띄울 정보창
+    // 1. KBO 10개 홈구장 좌표 데이터
+    const STADIUM_DATA = {
+      jamsil:  { name: "잠실 야구장", lat: 37.512257, lng: 127.071901 },
+      gocheok: { name: "고척 스카이돔", lat: 37.498231, lng: 126.867104 },
+      ssg:     { name: "SSG 랜더스필드", lat: 37.437048, lng: 126.693262 },
+      suwon:   { name: "수원 KT 위즈파크", lat: 37.299748, lng: 127.009668 },
+      hanwha:  { name: "대전 한화생명 이글스파크", lat: 36.317068, lng: 127.429134 },
+      samsung: { name: "대구 삼성 라이온즈 파크", lat: 35.841172, lng: 128.681534 },
+      kia:     { name: "광주 기아 챔피언스 필드", lat: 35.168132, lng: 126.889104 },
+      nc:      { name: "창원 NC 파크", lat: 35.222533, lng: 128.582381 },
+      sajik:   { name: "부산 사직 야구장", lat: 35.194031, lng: 129.061522 }
+    };
 
-    // 기본 좌표 설정 (위치 권한 미허용 또는 오류 시 사용할 기본 위치: 서울시청)
-    const DEFAULT_LATITUDE = 37.566826;
-    const DEFAULT_LONGITUDE = 126.978656;
-    const DEFAULT_MAP_LEVEL = 5;  // 요청 조건인 지도 확대 레벨 5
+    // 2. SVG 마커 이미지 Data URI (외부 파일 의존성을 없애기 위해 SVG 데이터 direct 삽입)
+    // (1) 야구공 마커 (구장 전용 - 큰 마커 42x42)
+    const BASEBALL_MARKER_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="#FFFFFF" stroke="#111111" stroke-width="4"/>
+        <path d="M 22,12 A 40,40 0 0,1 22,88" fill="none" stroke="#DC2626" stroke-width="5" stroke-dasharray="4,4"/>
+        <path d="M 78,12 A 40,40 0 0,0 78,88" fill="none" stroke="#DC2626" stroke-width="5" stroke-dasharray="4,4"/>
+      </svg>
+    `);
 
-    // 카카오맵 SDK 로드가 완료된 후 안전하게 스크립트를 실행
+    // (2) 빨간색 핀 마커 (맛집 전용 - 작은 마커 28x38)
+    const RED_MARKER_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
+        <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z" fill="#EF4444" stroke="#B91C1C" stroke-width="1.5"/>
+        <circle cx="14" cy="14" r="6" fill="#FFFFFF"/>
+      </svg>
+    `);
+
+    // (3) 파란색 핀 마커 (카페 전용 - 작은 마커 28x38)
+    const BLUE_MARKER_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="38" viewBox="0 0 28 38">
+        <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 24 14 24s14-13.5 14-24c0-7.732-6.268-14-14-14z" fill="#2563EB" stroke="#1D4ED8" stroke-width="1.5"/>
+        <circle cx="14" cy="14" r="6" fill="#FFFFFF"/>
+      </svg>
+    `);
+
+    // 3. 전역 변수
+    let mapObject = null;             // 지도 객체
+    let placesService = null;         // 카카오 장소 검색 서비스
+    let infoWindowObject = null;      // 팝업 정보창 객체
+    let activePlaceMarkers = [];      // 맛집/카페 마커 배열
+    let stadiumMarker = null;         // 야구장 중앙 마커
+    
+    let currentStadiumKey = 'jamsil'; // 기본 선택 구장
+    let currentCategoryCode = 'FD6';  // 기본 카테고리 (FD6: 맛집)
+    let currentFetchLimit = 10;       // 맛집 10개
+
+    // SDK 안전 로드 후 앱 시작
     kakao.maps.load(function () {
       initializeMap();
       setupEventListeners();
+      loadPlacesForSelectedStadium(); // 초기 화면 로드
     });
 
     /**
-     * 지도를 생성하고 초기에 내 위치를 가져와 세팅하는 함수
+     * 지도 및 기본 객체 초기화
      */
     function initializeMap() {
       const mapContainer = document.getElementById('map');
-      
-      // 초기 지도 옵션 생성
+      const initialStadium = STADIUM_DATA[currentStadiumKey];
+
       const mapOptions = {
-        center: new kakao.maps.LatLng(DEFAULT_LATITUDE, DEFAULT_LONGITUDE),
-        level: DEFAULT_MAP_LEVEL // 지도 확대 레벨 5 설정
+        center: new kakao.maps.LatLng(initialStadium.lat, initialStadium.lng),
+        level: 5 // 요구 조건: 레벨 5
       };
 
-      // 카카오 지도 객체 및 장소 검색 서비스 생성
       mapObject = new kakao.maps.Map(mapContainer, mapOptions);
       placesService = new kakao.maps.services.Places();
-      infoWindowObject = new kakao.maps.InfoWindow({ zIndex: 1 });
-
-      // 사용자 내 위치 가져오기 (위치 권한 요청)
-      fetchUserCurrentLocation();
+      infoWindowObject = new kakao.maps.InfoWindow({ zIndex: 10 });
     }
 
     /**
-     * 이벤트 리스너를 한곳에 모아 등록하는 함수
+     * 이벤트 리스너 등록
      */
     function setupEventListeners() {
-      // 검색 폼 제출(Submit) 이벤트 처리
-      const searchForm = document.getElementById('searchForm');
-      searchForm.addEventListener('submit', function (event) {
-        event.preventDefault(); // 폼 제출 시 페이지가 새로고침되는 현상 방지
-        const keyword = document.getElementById('searchInput').value.trim();
-        if (keyword) {
-          searchPlacesByKeyword(keyword);
-        }
+      // 구장 드롭다운 선택 변경 시
+      const stadiumSelect = document.getElementById('stadiumSelect');
+      stadiumSelect.addEventListener('change', function (e) {
+        currentStadiumKey = e.target.value;
+        loadPlacesForSelectedStadium();
+      });
+
+      // 맛집 / 카페 탭 클릭 이벤트
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      tabButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          // 활성화 클래스 변경
+          tabButtons.forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+
+          // 현재 카테고리 및 가져올 개수 제한 업데이트
+          currentCategoryCode = this.getAttribute('data-category');
+          currentFetchLimit = parseInt(this.getAttribute('data-limit'), 10);
+
+          // 새 카테고리로 검색 실행
+          loadPlacesForSelectedStadium();
+        });
       });
 
       // '현재 위치로' 버튼 클릭 이벤트
       const myLocationBtn = document.getElementById('myLocationBtn');
       myLocationBtn.addEventListener('click', function () {
-        fetchUserCurrentLocation();
+        moveToUserCurrentLocation();
       });
     }
 
     /**
-     * HTML5 Geolocation API로 내 현재 위치 권한을 확인하고 지도를 내 위치로 이동시키는 함수
+     * 선택된 구장과 탭(카테고리)에 맞추어 주변 장소를 검색
      */
-    function fetchUserCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function (position) {
-            const currentLat = position.coords.latitude;
-            const currentLng = position.coords.longitude;
-            const currentPosition = new kakao.maps.LatLng(currentLat, currentLng);
+    function loadPlacesForSelectedStadium() {
+      const stadium = STADIUM_DATA[currentStadiumKey];
+      const stadiumPosition = new kakao.maps.LatLng(stadium.lat, stadium.lng);
 
-            // 지도 중심을 현재 위치로 이동
-            mapObject.setCenter(currentPosition);
+      // 지도 중심을 선택된 구장으로 이동
+      mapObject.setCenter(stadiumPosition);
 
-            // 현재 위치 표시용 별도 마커 추가
-            displayCurrentLocationMarker(currentPosition);
-          },
-          function (error) {
-            console.warn('위치 권한을 불러올 수 없습니다:', error.message);
-            alert('위치 권한이 거부되었거나 가져올 수 없어 기본 위치(서울시청)로 설정됩니다.');
-          }
-        );
-      } else {
-        alert('이 브라우저에서는 Geolocation(위치 서비스)을 지원하지 않습니다.');
-      }
-    }
-
-    /**
-     * 현재 내 위치에 특별한 마커 표시
-     */
-    function displayCurrentLocationMarker(position) {
-      // 기존 마커 지우기
+      // 1. 기존 주변 장소 마커 및 야구장 마커 초기화
       clearPreviousMarkers();
 
-      const marker = new kakao.maps.Marker({
-        map: mapObject,
-        position: position
-      });
+      // 2. 야구공 모양의 큰 커스텀 마커 표시
+      displayStadiumMarker(stadiumPosition, stadium.name);
 
-      activeMarkers.push(marker);
+      // 3. 구장 중심 반경 1.5km 이내의 카테고리(FD6: 맛집, CE7: 카페) 장소 검색
+      const searchOptions = {
+        location: stadiumPosition,
+        radius: 1500, // 반경 1.5km
+        sort: kakao.maps.services.SortBy.ACCURACY
+      };
 
-      // 정보창(InfoWindow) 생성
-      infoWindowObject.setContent('<div style="padding:5px 10px;font-size:12px;color:#333;">📍 현재 내 위치</div>');
-      infoWindowObject.open(mapObject, marker);
+      placesService.categorySearch(currentCategoryCode, handleCategorySearchCallback, searchOptions);
     }
 
     /**
-     * 키워드로 카카오 장소 검색을 수행하는 함수
+     * 큰 야구공 마커를 생성하여 구장 위치에 핀 고정
      */
-    function searchPlacesByKeyword(keyword) {
-      // 카카오 키워드 검색 실행
-      placesService.keywordSearch(keyword, handlePlacesSearchCallback);
-    }
+    function displayStadiumMarker(position, stadiumName) {
+      const markerSize = new kakao.maps.Size(42, 42);
+      const markerOption = { offset: new kakao.maps.Point(21, 21) };
+      
+      const kakaoMarkerImage = new kakao.maps.MarkerImage(BASEBALL_MARKER_IMAGE, markerSize, markerOption);
 
-    /**
-     * 카카오 장소 검색 결과를 받아 처리하는 콜백 함수
-     */
-    function handlePlacesSearchCallback(data, status) {
-      const resultsListElement = document.getElementById('resultsList');
-
-      if (status === kakao.maps.services.Status.OK) {
-        // 검색 성공 시 이전 결과 및 마커 초기화
-        clearPreviousMarkers();
-        resultsListElement.innerHTML = '';
-
-        const bounds = new kakao.maps.LatLngBounds();
-
-        // 검색된 장소 목록 순회
-        data.forEach(function (place, index) {
-          const placePosition = new kakao.maps.LatLng(place.y, place.x);
-
-          // 지도 위에 마커 생성
-          const marker = createMarkerOnMap(placePosition, place);
-          
-          // 리스트 항목 HTML 요소 생성
-          const listItem = createPlaceListItemElement(place, marker);
-          resultsListElement.appendChild(listItem);
-
-          // 검색된 장소들이 모두 보이도록 영역 범위 확장
-          bounds.extend(placePosition);
-        });
-
-        // 지도 범위를 검색 결과에 맞추어 변경
-        mapObject.setBounds(bounds);
-
-      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
-        resultsListElement.innerHTML = '<li class="status-message">검색 결과가 존재하지 않습니다.</li>';
-      } else if (status === kakao.maps.services.Status.ERROR) {
-        resultsListElement.innerHTML = '<li class="status-message">검색 중 오류가 발생했습니다.</li>';
-      }
-    }
-
-    /**
-     * 지도상에 마커를 생성하고 이벤트 연결
-     */
-    function createMarkerOnMap(position, place) {
-      const marker = new kakao.maps.Marker({
+      stadiumMarker = new kakao.maps.Marker({
         position: position,
+        image: kakaoMarkerImage,
         map: mapObject
       });
 
-      // 마커 클릭 시 정보창 표시
-      kakao.maps.event.addListener(marker, 'click', function () {
-        const content = `<div style="padding:8px 12px;font-size:13px;font-weight:bold;">${place.place_name}</div>`;
-        infoWindowObject.setContent(content);
-        infoWindowObject.open(mapObject, marker);
+      // 야구공 마커 클릭 시 정보창
+      kakao.maps.event.addListener(stadiumMarker, 'click', function () {
+        showInfoWindow(stadiumMarker, `<strong>🏟️ ${stadiumName}</strong><span>홈구장 중심 위치</span>`);
+      });
+    }
+
+    /**
+     * 카카오 카테고리 검색 결과 콜백 함수
+     */
+    function handleCategorySearchCallback(data, status) {
+      const resultsListElement = document.getElementById('resultsList');
+      resultsListElement.innerHTML = '';
+
+      if (status === kakao.maps.services.Status.OK) {
+        // 지정된 개수(맛집 10개, 카페 3~5개)만큼 슬라이스
+        const limitedPlaces = data.slice(0, currentFetchLimit);
+
+        limitedPlaces.forEach(function (place) {
+          const placePosition = new kakao.maps.LatLng(place.y, place.x);
+
+          // 탭 종류에 따라 마커 색상 지정 (맛집: 빨간색, 카페: 파란색)
+          const markerImageSrc = (currentCategoryCode === 'FD6') ? RED_MARKER_IMAGE : BLUE_MARKER_IMAGE;
+          
+          // 작은 핀 마커 생성
+          const placeMarker = createSmallMarker(placePosition, markerImageSrc, place);
+          activePlaceMarkers.push(placeMarker);
+
+          // 좌측 리스트에 추가
+          const listItem = createPlaceListItemElement(place, placeMarker);
+          resultsListElement.appendChild(listItem);
+        });
+
+      } else if (status === kakao.maps.services.Status.ZERO_RESULT) {
+        resultsListElement.innerHTML = '<li class="status-message">주변에 검색된 장소가 없습니다.</li>';
+      } else {
+        resultsListElement.innerHTML = '<li class="status-message">장소를 불러오는 중 오류가 발생했습니다.</li>';
+      }
+    }
+
+    /**
+     * 맛집/카페용 작은 커스텀 마커 생성 함수
+     */
+    function createSmallMarker(position, imageSrc, place) {
+      const markerSize = new kakao.maps.Size(28, 38);
+      const markerOption = { offset: new kakao.maps.Point(14, 38) };
+      const markerImage = new kakao.maps.MarkerImage(imageSrc, markerSize, markerOption);
+
+      const marker = new kakao.maps.Marker({
+        position: position,
+        image: markerImage,
+        map: mapObject
       });
 
-      activeMarkers.push(marker);
+      // 마커 클릭 시 팝업(이름 + 주소) 표시
+      kakao.maps.event.addListener(marker, 'click', function () {
+        const addressText = place.road_address_name || place.address_name;
+        const popupContent = `
+          <div class="custom-infowindow">
+            <strong>${place.place_name}</strong>
+            <span>${addressText}</span>
+          </div>
+        `;
+        showInfoWindow(marker, popupContent);
+      });
+
       return marker;
     }
 
     /**
-     * 좌측 사이드바 결과 리스트의 개별 HTML 아이템 생성
+     * 왼쪽 목록 리스트 아이템 생성
      */
     function createPlaceListItemElement(place, marker) {
       const li = document.createElement('li');
       li.className = 'result-item';
 
-      const addressText = place.road_address_name ? place.road_address_name : place.address_name;
-      const phoneText = place.phone ? place.phone : '전화번호 정보 없음';
+      const addressText = place.road_address_name || place.address_name;
+      const phoneText = place.phone || '전화번호 정보 없음';
 
       li.innerHTML = `
         <div class="place-title">${place.place_name}</div>
@@ -393,28 +485,67 @@
         <div class="place-phone">${phoneText}</div>
       `;
 
-      // 리스트 항목 클릭 시 해당 위치로 이동 및 정보창 띄우기
+      // 리스트 클릭 시 위치로 이동 및 정보 팝업 출력
       li.addEventListener('click', function () {
-        const movePosition = new kakao.maps.LatLng(place.y, place.x);
-        mapObject.panTo(movePosition);
-        
-        const content = `<div style="padding:8px 12px;font-size:13px;font-weight:bold;">${place.place_name}</div>`;
-        infoWindowObject.setContent(content);
-        infoWindowObject.open(mapObject, marker);
+        const placePosition = new kakao.maps.LatLng(place.y, place.x);
+        mapObject.panTo(placePosition);
+
+        const popupContent = `
+          <div class="custom-infowindow">
+            <strong>${place.place_name}</strong>
+            <span>${addressText}</span>
+          </div>
+        `;
+        showInfoWindow(marker, popupContent);
       });
 
       return li;
     }
 
     /**
-     * 기존에 지도에 찍힌 마커들을 모두 지우는 정리 함수
+     * 공통 팝업(인포윈도우) 표시 함수
+     */
+    function showInfoWindow(marker, contentHTML) {
+      infoWindowObject.setContent(contentHTML);
+      infoWindowObject.open(mapObject, marker);
+    }
+
+    /**
+     * 이전 마커 및 인포윈도우 지우기
      */
     function clearPreviousMarkers() {
-      activeMarkers.forEach(function (marker) {
+      // 맛집/카페 마커 삭제
+      activePlaceMarkers.forEach(function (marker) {
         marker.setMap(null);
       });
-      activeMarkers = [];
+      activePlaceMarkers = [];
+
+      // 야구장 마커 삭제
+      if (stadiumMarker) {
+        stadiumMarker.setMap(null);
+        stadiumMarker = null;
+      }
+
       infoWindowObject.close();
+    }
+
+    /**
+     * 사용자의 실제 위치로 지도를 이동
+     */
+    function moveToUserCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            const userPos = new kakao.maps.LatLng(position.coords.latitude, position.coords.longitude);
+            mapObject.panTo(userPos);
+          },
+          function () {
+            alert('현재 위치 정보를 불러올 수 없습니다. 위치 권한을 확인해 주세요.');
+          }
+        );
+      } else {
+        alert('이 브라우저에서는 위치 서비스를 지원하지 않습니다.');
+      }
     }
   </script>
 </body>
